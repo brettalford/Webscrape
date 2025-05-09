@@ -22,7 +22,10 @@ filteredscore=0
 date = datetime.now().strftime("%Y-%m-%d")
 #headlines
 headstore=[]
-
+#links
+links=[]
+#pagelinks
+pagelinks=[]
 
 #starting up playwright
 with sync_playwright() as p:
@@ -32,8 +35,10 @@ with sync_playwright() as p:
     page = browser.new_page()
 
     #youll change this url to the news topic you want
-    base_url = "https://www.google.com/search?q=stock+market&sca_esv=9a9c0617610f4828&rlz=1C1UEAD_enUS1003US1003&tbs=sbd:1,qdr:d&tbm=nws&sxsrf=AHTn8zq0bNei4RcNfx1P712t26YgMMLxhQ:1746757699459&source=lnt&sa=X&ved=2ahUKEwiXjb3Bq5WNAxUJ6ckDHUXqGp0QpwV6BAgDEAg&biw=1536&bih=791&dpr=1.25"
-      #
+    base_url = "https://www.google.com/search?q=us+stock+market&sca_esv=31cd4d2547bda482&rlz=1C1UEAD_enUS1003US1003&tbs=sbd:1,qdr:h&tbm=nws&sxsrf=AHTn8zreex89nP19iZt2jxqvOFPypdkCYg:1746816456683&source=lnt&sa=X&ved=2ahUKEwjivY2zhpeNAxWTLtAFHQxsE5UQpwV6BAgCEAc&biw=1536&bih=791&dpr=1.25"
+    #
+    #
+    #
     #telling playwright to go to this url
     page.goto(base_url)
 
@@ -48,7 +53,11 @@ with sync_playwright() as p:
         try:
             page.wait_for_selector("div.n0jPhd", timeout=1500)  
             headlines = page.query_selector_all("div.n0jPhd")
+            link_elements = page.query_selector_all("a.WlydOe")
 
+            for link in link_elements:
+                href = link.get_attribute("href")
+                links.append(href)
             #if you cant find another
             if not headlines:  
                 print("No headlines found on this page.")
@@ -98,8 +107,8 @@ print(f'filtered score {filteredscore/(scorecount)}')
 
 
 #writing headlines and scores to csv
-with open('headlines_sentiment.csv', mode='w', newline='', encoding='utf-8') as file:
+with open('headlines_sentiment.csv', mode='a', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
-    writer.writerow(['Headline', 'Sentiment Score', 'Upload Date'])  # Updated header
+    writer.writerow(['Headline', 'Links', 'Sentiment Score', 'Upload Date'])  # Updated header
     for i in range(len(headstore)):
-        writer.writerow([headstore[i], scores[i], date ])
+        writer.writerow([headstore[i], links[i], scores[i], date ])
