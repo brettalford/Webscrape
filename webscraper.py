@@ -2,6 +2,8 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from playwright.sync_api import sync_playwright
 import re
 import time
+import csv
+from datetime import datetime
 
 analyzer = SentimentIntensityAnalyzer()
 
@@ -9,11 +11,18 @@ def clean_text(text):
     return re.sub(r'[^\x00-\x7F]+', '', text)
 
 #number of pages to search
-max_pages = 10  
+max_pages = 5  
 #scores overall
 scores=[]
 #aggregte score
 aggscore=0
+#zeros removed
+filteredscore=0
+#date
+date = datetime.now().strftime("%Y-%m-%d")
+#headlines
+headstore=[]
+
 
 #starting up playwright
 with sync_playwright() as p:
@@ -23,9 +32,8 @@ with sync_playwright() as p:
     page = browser.new_page()
 
     #youll change this url to the news topic you want
-    base_url = "https://www.google.com/search?q=github&sca_esv=a122d3f84a806bce&rlz=1C1UEAD_enUS1003US1003&tbs=sbd:1,qdr:d&tbm=nws&sxsrf=AHTn8zrhVtNdlg-uyXid4Qm0HWMEggu2rg:1746689853072&source=lnt&sa=X&ved=2ahUKEwjPqebhrpONAxVj4skDHazQNSYQpwV6BAgCEAg&biw=1536&bih=791&dpr=1.25"
-    #
-    #
+    base_url = "https://www.google.com/search?q=stock+market&sca_esv=9a9c0617610f4828&rlz=1C1UEAD_enUS1003US1003&tbs=sbd:1,qdr:d&tbm=nws&sxsrf=AHTn8zq0bNei4RcNfx1P712t26YgMMLxhQ:1746757699459&source=lnt&sa=X&ved=2ahUKEwiXjb3Bq5WNAxUJ6ckDHUXqGp0QpwV6BAgDEAg&biw=1536&bih=791&dpr=1.25"
+      #
     #telling playwright to go to this url
     page.goto(base_url)
 
@@ -38,13 +46,14 @@ with sync_playwright() as p:
 
         #try to select a headline element
         try:
-            page.wait_for_selector("div.n0jPhd", timeout=3000)  
+            page.wait_for_selector("div.n0jPhd", timeout=1500)  
             headlines = page.query_selector_all("div.n0jPhd")
 
             #if you cant find another
             if not headlines:  
                 print("No headlines found on this page.")
                 break
+
 
             #extracting hedline stuffs and adding scores based on sentiment analysis via vader
             for h in headlines:
@@ -53,6 +62,7 @@ with sync_playwright() as p:
                 score = analyzer.polarity_scores(text)['compound']
                 print(f"{text} — {score:.3f}")
                 scores.append(score)
+                headstore.append(text)
                 aggscore+=score
         #exception
         except Exception as e:
@@ -60,7 +70,7 @@ with sync_playwright() as p:
             break
 
 
-        #go to th next page via the number at the bottom
+        #go to the next page via the number at the bottom
         next_page_label = f"a[aria-label='Page {current_page + 1}']"
         if page.locator(next_page_label).is_visible():
             page.click(next_page_label)
@@ -70,10 +80,26 @@ with sync_playwright() as p:
         else:
             print("No more pages.")
             break
+
     
     browser.close()
 
+
+scorecount=0
 #final scores
+for i in range(len(scores)):
+    if(scores[i]!=0.0):
+        filteredscore+=(scores[i])
+        scorecount+=1
 finalscore=aggscore/len(scores)
 print (scores)
 print(f'final score {finalscore}')
+print(f'filtered score {filteredscore/(scorecount)}')
+
+
+#writing headlines and scores to csv
+with open('headlines_sentiment.csv', mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.writer(file)
+    writer.writerow(['Headline', 'Sentiment Score', 'Upload Date'])  # Updated header
+    for i in range(len(headstore)):
+        writer.writerow([headstore[i], scores[i], date ])
