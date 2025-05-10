@@ -19,13 +19,17 @@ aggscore=0
 #zeros removed
 filteredscore=0
 #date
-date = datetime.now().strftime("%Y-%m-%d")
+date = datetime.now()
 #headlines
 headstore=[]
 #links
 links=[]
 #pagelinks
 pagelinks=[]
+#relative times
+reltimes=[]
+
+
 
 #starting up playwright
 with sync_playwright() as p:
@@ -47,17 +51,22 @@ with sync_playwright() as p:
         #page increment
         current_page = i + 1
         #print page num
-        print(f"\n--- Page {current_page} ---\n")
+        #print(f"\n--- Page {current_page} ---\n")
 
         #try to select a headline element
         try:
-            page.wait_for_selector("div.n0jPhd", timeout=1500)  
+            page.wait_for_selector("div.n0jPhd", timeout=1250)  
             headlines = page.query_selector_all("div.n0jPhd")
             link_elements = page.query_selector_all("a.WlydOe")
+            page_times = page.query_selector_all("div.OSrXXb.rbYSKb.LfVVr > span")
 
             for link in link_elements:
                 href = link.get_attribute("href")
                 links.append(href)
+
+            for times in page_times:
+                time_text = times.text_content()
+                reltimes.append(time_text)
             #if you cant find another
             if not headlines:  
                 print("No headlines found on this page.")
@@ -69,7 +78,7 @@ with sync_playwright() as p:
                 raw_text = h.inner_text().strip()
                 text = clean_text(raw_text)
                 score = analyzer.polarity_scores(text)['compound']
-                print(f"{text} — {score:.3f}")
+                #print(f"{text} — {score:.3f}")
                 scores.append(score)
                 headstore.append(text)
                 aggscore+=score
@@ -101,14 +110,15 @@ for i in range(len(scores)):
         filteredscore+=(scores[i])
         scorecount+=1
 finalscore=aggscore/len(scores)
-print (scores)
-print(f'final score {finalscore}')
-print(f'filtered score {filteredscore/(scorecount)}')
+#print (scores)
+#print(f'final score {finalscore}')
+#print(f'filtered score {filteredscore/(scorecount)}')
+#print(f'times: {reltimes}')
 
 
 #writing headlines and scores to csv
 with open('headlines_sentiment.csv', mode='a', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
-    writer.writerow(['Headline', 'Links', 'Sentiment Score', 'Upload Date'])  # Updated header
+    writer.writerow(['Headline', 'Links', 'Sentiment Score', 'Upload Date', 'Relative time'])  # Updated header
     for i in range(len(headstore)):
-        writer.writerow([headstore[i], links[i], scores[i], date ])
+        writer.writerow([headstore[i], links[i], scores[i], date, reltimes[i]])
