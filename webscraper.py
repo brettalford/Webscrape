@@ -37,7 +37,7 @@ abstime=[]
 #starting up playwright
 with sync_playwright() as p:
     #launching chromiun
-    browser = p.chromium.launch(headless=False)
+    browser = p.chromium.launch(headless=True)
     #context to make it seem more normal to google algo
     context = browser.new_context(
     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -48,7 +48,7 @@ with sync_playwright() as p:
 
 
     #youll change this url to the news topic you want
-    base_url = "https://www.google.com/search?q=nasdaq&sca_esv=9bb75c165dc77b23&rlz=1C1UEAD_enUS1003US1003&tbs=sbd:1,qdr:h&tbm=nws&sxsrf=AHTn8zqnJiv_Dl986lMgg5RPfA219N5naA:1746860464269&source=lnt&sa=X&ved=2ahUKEwjKtMerqpiNAxVRLtAFHdCzHoIQpwV6BAgCEAc&biw=1536&bih=791&dpr=1.25"
+    base_url = "https://www.google.com/search?q=stock+market&sca_esv=9bb75c165dc77b23&rlz=1C1UEAD_enUS1003US1003&biw=1536&bih=791&tbs=sbd%3A1%2Cqdr%3Ah&tbm=nws&sxsrf=AHTn8zqyv4VqIGt9qUtMSK2sQUsHQj2lLQ%3A1746863739572&ei=ewYfaPjYIojIwN4PrNqJkAs&oq=sto&gs_lp=Egxnd3Mtd2l6LW5ld3MiA3N0byoCCAAyDRAAGIAEGLEDGEMYigUyDRAAGIAEGLEDGEMYigUyDRAAGIAEGLEDGEMYigUyDRAAGIAEGLEDGEMYigUyDRAAGIAEGLEDGEMYigUyChAAGIAEGEMYigUyChAAGIAEGEMYigUyChAAGIAEGEMYigUyChAAGIAEGEMYigUyChAAGIAEGEMYigVIiBhQAFjNDnABeACQAQCYAXygAegCqgEDMC4zuAEDyAEA-AEBmAIDoAL-AqgCAMICEBAAGIAEGLEDGEMYgwEYigWYAwKSBwMwLjOgB-4QsgcDMC4zuAf-Ag&sclient=gws-wiz-news"
     #
     #
     #
@@ -130,7 +130,7 @@ print(f'filtered score {filteredscore/(scorecount)}')
 with open('headlines_sentiment.csv', mode='a', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
     #only needs to run the first time
-    writer.writerow(['Headline', 'Links', 'Sentiment Score', 'Upload Date', 'Relative Time', 'Absolute Time']) 
+    #writer.writerow(['Headline', 'Links', 'Sentiment Score', 'Upload Date', 'Relative Time', 'Absolute Time']) 
     #writing data 
     for i in range(len(headstore)):
         writer.writerow([headstore[i], links[i], scores[i], uptime, reltimes[i], abstime[i]])
