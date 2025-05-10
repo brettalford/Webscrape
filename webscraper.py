@@ -10,16 +10,17 @@ analyzer = SentimentIntensityAnalyzer()
 def clean_text(text):
     return re.sub(r'[^\x00-\x7F]+', '', text)
 
-#number of pages to search
-max_pages = 5  
+#number of pages to search(no reason not to do max)
+max_pages = 50  
 #scores overall
 scores=[]
 #aggregte score
 aggscore=0
 #zeros removed
 filteredscore=0
-#date
-date = datetime.now()
+#current uplod time
+now = datetime.now()
+uptime = now.hour * 60 + now.minute
 #headlines
 headstore=[]
 #links
@@ -28,18 +29,26 @@ links=[]
 pagelinks=[]
 #relative times
 reltimes=[]
+#absolute time
+abstime=[]
 
 
 
 #starting up playwright
 with sync_playwright() as p:
     #launching chromiun
-    browser = p.chromium.launch(headless=True)
-    #page is a new page
-    page = browser.new_page()
+    browser = p.chromium.launch(headless=False)
+    #context to make it seem more normal to google algo
+    context = browser.new_context(
+    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    viewport={"width": 1366, "height": 768},
+    locale="en-US"
+    )
+    page = context.new_page()
+
 
     #youll change this url to the news topic you want
-    base_url = "https://www.google.com/search?q=us+stock+market&sca_esv=31cd4d2547bda482&rlz=1C1UEAD_enUS1003US1003&tbs=sbd:1,qdr:h&tbm=nws&sxsrf=AHTn8zreex89nP19iZt2jxqvOFPypdkCYg:1746816456683&source=lnt&sa=X&ved=2ahUKEwjivY2zhpeNAxWTLtAFHQxsE5UQpwV6BAgCEAc&biw=1536&bih=791&dpr=1.25"
+    base_url = "https://www.google.com/search?q=nasdaq&sca_esv=9bb75c165dc77b23&rlz=1C1UEAD_enUS1003US1003&tbs=sbd:1,qdr:h&tbm=nws&sxsrf=AHTn8zqnJiv_Dl986lMgg5RPfA219N5naA:1746860464269&source=lnt&sa=X&ved=2ahUKEwjKtMerqpiNAxVRLtAFHdCzHoIQpwV6BAgCEAc&biw=1536&bih=791&dpr=1.25"
     #
     #
     #
@@ -55,18 +64,20 @@ with sync_playwright() as p:
 
         #try to select a headline element
         try:
-            page.wait_for_selector("div.n0jPhd", timeout=1250)  
+            page.wait_for_selector("div.n0jPhd", timeout=1500)  
             headlines = page.query_selector_all("div.n0jPhd")
             link_elements = page.query_selector_all("a.WlydOe")
             page_times = page.query_selector_all("div.OSrXXb.rbYSKb.LfVVr > span")
-
+            #getting links
             for link in link_elements:
                 href = link.get_attribute("href")
                 links.append(href)
-
+            #getting relative and absolute times
             for times in page_times:
                 time_text = times.text_content()
-                reltimes.append(time_text)
+                match = re.search(r'\d+', time_text)
+                reltimes.append(int(match.group()) if match else 0)
+                abstime.append(uptime-(int(match.group()) if match else 0))
             #if you cant find another
             if not headlines:  
                 print("No headlines found on this page.")
@@ -99,7 +110,6 @@ with sync_playwright() as p:
             print("No more pages.")
             break
 
-    
     browser.close()
 
 
@@ -111,14 +121,17 @@ for i in range(len(scores)):
         scorecount+=1
 finalscore=aggscore/len(scores)
 #print (scores)
-#print(f'final score {finalscore}')
-#print(f'filtered score {filteredscore/(scorecount)}')
+print(f'final score {finalscore}')
+print(f'filtered score {filteredscore/(scorecount)}')
 #print(f'times: {reltimes}')
 
 
 #writing headlines and scores to csv
 with open('headlines_sentiment.csv', mode='a', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
-    writer.writerow(['Headline', 'Links', 'Sentiment Score', 'Upload Date', 'Relative time'])  # Updated header
+    #only needs to run the first time
+    writer.writerow(['Headline', 'Links', 'Sentiment Score', 'Upload Date', 'Relative Time', 'Absolute Time']) 
+    #writing data 
     for i in range(len(headstore)):
-        writer.writerow([headstore[i], links[i], scores[i], date, reltimes[i]])
+        writer.writerow([headstore[i], links[i], scores[i], uptime, reltimes[i], abstime[i]])
+file.close()
