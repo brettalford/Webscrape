@@ -1,0 +1,9 @@
+Steps:
+
+1:Go to google and search the topic of your choice
+2:Navigate to the news tab
+3:Sort by Date
+4:Change "recent" to "last hour"
+5:Copy the link from your address bar
+6: replace the link for scrape.webscrape(#this link) with the copied link
+7:Start the program
