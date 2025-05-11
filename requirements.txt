@@ -1,0 +1,11 @@
+Required: 
+
+vaderSentiment
+playwright
+re
+time
+datetime
+csv
+pandas
+numpy
+matplotlib
